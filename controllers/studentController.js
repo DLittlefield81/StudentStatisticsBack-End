@@ -1,19 +1,13 @@
 // ObjectId() method for converting studentId string into an ObjectId for querying database
 const { ObjectId } = require('mongoose').Types;
 const { Student, Course } = require('../models');
-
 // TODO: Create an aggregate function to get the number of students overall
 // Execute the aggregate method on the Student model and calculate the overall grade by using the $avg operator
 const headCount = async () =>
-  Student.aggregate([
-    {
-      $group: {
-        _id: null,
-        sum_students: { $sum: '$students' },
-      }
-    },
-  ])
-    // Your code here
+  Student.aggregate()
+
+    .count("numberOfStudents")
+    .then((numberOfStudents) => numberOfStudents)
     .then((numberOfStudents) => numberOfStudents);
 
 console.log(headCount);
@@ -24,8 +18,7 @@ const grade = async (studentId) =>
   Student.aggregate([
     // TODO: Ensure we include only the student who can match the given ObjectId using the $match operator
     {
-      $group: { id: studentId },
-      avg_grade: { $avg: '$assignment.score' },
+      $match: { _id: ObjectId(studentId) },
       // Your code here
     },
     {
@@ -34,7 +27,8 @@ const grade = async (studentId) =>
     // TODO: Group information for the student with the given ObjectId alongside an overall grade calculated using the $avg operator
     {
       $group: {
-        avg_grade: { $avg: 'asignment.score' }
+        _id: studentId,
+        avg_grade: { $avg: 'assignments.score' }
       }
       // Your code here
     },
@@ -65,9 +59,9 @@ module.exports = {
         !student
           ? res.status(404).json({ message: 'No student with that ID' })
           : res.json({
-              student,
-              grade: await grade(req.params.studentId),
-            })
+            student,
+            grade: await grade(req.params.studentId),
+          })
       )
       .catch((err) => {
         console.log(err);
@@ -87,16 +81,16 @@ module.exports = {
         !student
           ? res.status(404).json({ message: 'No such student exists' })
           : Course.findOneAndUpdate(
-              { students: req.params.studentId },
-              { $pull: { students: req.params.studentId } },
-              { new: true }
-            )
+            { students: req.params.studentId },
+            { $pull: { students: req.params.studentId } },
+            { new: true }
+          )
       )
       .then((course) =>
         !course
           ? res.status(404).json({
-              message: 'Student deleted, but no courses found',
-            })
+            message: 'Student deleted, but no courses found',
+          })
           : res.json({ message: 'Student successfully deleted' })
       )
       .catch((err) => {
@@ -117,8 +111,8 @@ module.exports = {
       .then((student) =>
         !student
           ? res
-              .status(404)
-              .json({ message: 'No student found with that ID :(' })
+            .status(404)
+            .json({ message: 'No student found with that ID :(' })
           : res.json(student)
       )
       .catch((err) => res.status(500).json(err));
@@ -133,8 +127,8 @@ module.exports = {
       .then((student) =>
         !student
           ? res
-              .status(404)
-              .json({ message: 'No student found with that ID :(' })
+            .status(404)
+            .json({ message: 'No student found with that ID :(' })
           : res.json(student)
       )
       .catch((err) => res.status(500).json(err));
