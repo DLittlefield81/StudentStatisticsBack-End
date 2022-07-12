@@ -24,7 +24,8 @@ const grade = async (studentId) =>
   Student.aggregate([
     // TODO: Ensure we include only the student who can match the given ObjectId using the $match operator
     {
-      $match: { id: { $eq: ObjectId } },
+      $group: { id: studentId },
+      avg_grade: { $avg: '$assignment.score' },
       // Your code here
     },
     {
